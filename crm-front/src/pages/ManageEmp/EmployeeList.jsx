@@ -7,10 +7,12 @@ import {
   Modal,
   Descriptions,
   Divider,
+  Space,
+  Input,
 } from "antd";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import axiosInstance from "../../services/api";
+import { SearchOutlined } from "@ant-design/icons";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -22,18 +24,25 @@ const EmployeeList = () => {
   });
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [pagination.current, pagination.pageSize]);
 
   const fetchEmployees = async () => {
     try {
-      const response = await axiosInstance.get("/emp/get-employee");
+      const response = await axiosInstance.get("/emp/get-employee", {
+        params: {
+          page: pagination.current,
+          limit: pagination.pageSize,
+          search: searchText,
+        },
+      });
       setEmployees(response.data.data);
       setPagination({
         ...pagination,
-        total: response.data.pagination.totalItems,
+        total: response.data.pagination?.totalItems || 0,
       });
     } catch (error) {
       message.error("Failed to load employees.");
@@ -51,8 +60,19 @@ const EmployeeList = () => {
     support: "cyan",
     designer: "magenta",
     social_media: "volcano",
-    tech_team: "gold",
+    developer_team: "gold",
     manager: "geekblue",
+  };
+
+  const departmentColors = {
+    "Development Team": "geekblue",
+    "HR Team": "green",
+    "SMM Team": "volcano",
+    "Designer Team": "magenta",
+    "Sales Team": "purple",
+    "Support Team": "cyan",
+    "Accounts Team": "orange",
+    Manager: "gold",
   };
 
   const formatDate = (dateString) => {
@@ -64,6 +84,16 @@ const EmployeeList = () => {
   const showEmployeeDetails = (employee) => {
     setSelectedEmployee(employee);
     setModalVisible(true);
+  };
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    setPagination(pagination);
+  };
+
+  const handleSearch = (value) => {
+    setSearchText(value);
+    setPagination({ ...pagination, current: 1 });
+    fetchEmployees();
   };
 
   const columns = [
@@ -100,30 +130,66 @@ const EmployeeList = () => {
       onFilter: (value, record) => record.role === value,
     },
     {
+      title: "Department",
+      dataIndex: "department",
+      key: "department",
+      render: (department) => (
+        <Tag color={departmentColors[department] || "default"} key={department}>
+          {department}
+        </Tag>
+      ),
+      filters: [
+        "Development Team",
+        "HR Team",
+        "SMM Team",
+        "Designer Team",
+        "Sales Team",
+        "Support Team",
+        "Accounts Team",
+        "Manager",
+      ].map((dept) => ({
+        text: dept,
+        value: dept,
+      })),
+      onFilter: (value, record) => record.department === value,
+    },
+    {
       title: "Joined Date",
       dataIndex: "joining_date",
       key: "joining_date",
       render: formatDate,
+      sorter: (a, b) => new Date(a.joining_date) - new Date(b.joining_date),
     },
     {
       title: "Actions",
       key: "actions",
       render: (text, record) => (
-        <>
+        <Space size="middle">
           <Button type="link" onClick={() => showEmployeeDetails(record)}>
             View
           </Button>
           <Link to={`/dashboard/employees/edit/${record.id}`}>
             <Button type="link">Edit</Button>
           </Link>
-        </>
+        </Space>
       ),
     },
   ];
 
   return (
     <div className="add-employee-container mt-10 p-10">
-      <h2 className="text-center p-2 m-2 font-bold">Employee List</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Employee List</h2>
+        <Input.Search
+          placeholder="Search employees"
+          allowClear
+          enterButton={<SearchOutlined />}
+          size="large"
+          style={{ width: 300 }}
+          onSearch={handleSearch}
+        />
+      </div>
+
       <Table
         columns={columns}
         dataSource={employees}
@@ -133,7 +199,9 @@ const EmployeeList = () => {
           ...pagination,
           showSizeChanger: true,
           pageSizeOptions: ["10", "20", "50", "100"],
+          showTotal: (total) => `Total ${total} employees`,
         }}
+        onChange={handleTableChange}
       />
 
       <Modal
@@ -166,6 +234,15 @@ const EmployeeList = () => {
                 {selectedEmployee.role.toUpperCase().replace("_", " ")}
               </Tag>
             </Descriptions.Item>
+            <Descriptions.Item label="Department">
+              <Tag
+                color={
+                  departmentColors[selectedEmployee.department] || "default"
+                }
+              >
+                {selectedEmployee.department}
+              </Tag>
+            </Descriptions.Item>
             <Descriptions.Item label="Phone">
               {selectedEmployee.phone || "N/A"}
             </Descriptions.Item>
@@ -174,9 +251,6 @@ const EmployeeList = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Designation">
               {selectedEmployee.designation || "N/A"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Department">
-              {selectedEmployee.department || "N/A"}
             </Descriptions.Item>
             <Descriptions.Item label="Date of Birth">
               {formatDate(selectedEmployee.dob)}
@@ -201,9 +275,6 @@ const EmployeeList = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Blood Group">
               {selectedEmployee.blood_group || "N/A"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Reference Contacts">
-              {selectedEmployee.reference_contacts || "N/A"}
             </Descriptions.Item>
           </Descriptions>
         )}

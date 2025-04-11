@@ -56,51 +56,70 @@ exports.signup = async (req, res) => {
 // User Login flow
 exports.login = async (req, res) => {
   try {
-    console.log(req.body);
-
     const { email, password } = req.body;
 
-    const employee = await Employee.findOne({ where: { email } });
-    console.log(employee);
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required",
+      });
     }
 
-    console.log(password);
-    console.log(employee.password);
+    const employee = await Employee.findOne({ where: { email } });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: "Account not found. Please check your email or sign up.",
+      });
+    }
 
     const isPasswordValid = await bcrypt.compare(
       password,
       employee?.dataValues?.password
     );
-    console.log(isPasswordValid);
 
     if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Invalid credentials." });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid password. Please try again.",
+      });
     }
+
+    // Generate tokens
     const accessToken = generateAccessToken(employee);
     const refreshToken = generateRefreshToken(employee);
 
-    console.log(accessToken, `access`);
-    console.log(refreshToken, `refresh`);
+    // Invalidate old refresh tokens
+    await Token.destroy({ where: { employeeId: employee.id } });
 
-    await Token.destroy({ where: { employeeId: employee.id } }); // Invalidate old refresh tokens
-
+    // Store new refresh token
     await Token.create({
       employeeId: employee.id,
       token: refreshToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     });
 
+    // Set cookies
     setAuthCookies(res, accessToken, refreshToken);
 
-    res.status(201).json({
-      message: "Employee logged in successfully",
+    res.status(200).json({
+      success: true,
+      message: "Login successful! Redirecting...",
+      employee: {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        role: employee.role,
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      error: "An unexpected error occurred. Please try again later.",
+    });
   }
 };
 

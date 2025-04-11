@@ -16,6 +16,8 @@ import AuthRedirect from "./components/AuthRedirect/AuthRedirect";
 import PageNotFound from "./pages/ErrorPages/PageNotFound";
 import AddEmployee from "./pages/ManageEmp/AddEmployee";
 import EmployeeList from "./pages/ManageEmp/EmployeeList";
+import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import Signup from "./pages/Auth/Signup";
 
 function App() {
   // http://localhost:5173
@@ -41,12 +43,38 @@ function App() {
               </AuthRedirect>
             }
           />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/signup"
+            element={
+              <AuthRedirect>
+                <Signup />
+              </AuthRedirect>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard/employees/add"
-            element={<AddEmployee />}
+            element={
+              <ProtectedRoute>
+                <AddEmployee />
+              </ProtectedRoute>
+            }
           />{" "}
-          <Route path="/dashboard/employees/list" element={<EmployeeList />} />
+          <Route
+            path="/dashboard/employees/list"
+            element={
+              <ProtectedRoute>
+                <EmployeeList />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<PageNotFound />} />
         </Route>
       </>

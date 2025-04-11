@@ -1,31 +1,28 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
-import Footer from "../components/Footer/Footer";
 import RoleSidebar from "../components/RoleSidebar/RoleSidebar";
+// Layout/Layout.jsx
 function Layout() {
   const location = useLocation();
-  //   console.log(location);
-  const isLogin =
-    location.pathname === "/" ||
-    location.pathname === "/signup" ||
-    location.pathname === "/forgot-password";
+  const isAuthPage = ["/", "/signup", "/forgot-password"].includes(
+    location.pathname
+  );
 
   return (
-    <>
-      {!isLogin && <Navbar />}
-      <div className="flex h-[100vh]  ">
-        <div>
-          {/* Sidebar */}
-          {!isLogin && <RoleSidebar />}
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1  bg-gray-100 ">
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {!isAuthPage && <Navbar />}
+      <div className="flex flex-1 overflow-hidden">
+        {!isAuthPage && <RoleSidebar />}
+        <main
+          className={`flex-1 overflow-auto ${
+            !isAuthPage ? "md:ml-64 pt-14" : ""
+          }`}
+        >
           <Outlet />
-        </div>
+        </main>
       </div>
-    </>
+    </div>
   );
 }
 

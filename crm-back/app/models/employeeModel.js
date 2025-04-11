@@ -27,18 +27,29 @@ const Employee = sequelize.define(
       type: DataTypes.ENUM(
         "employee",
         "admin",
+        "developer_team",
         "hr",
-        "accounts",
+        "social_media",
+        "designer",
         "sales",
         "support",
-        "designer",
-        "social_media",
-        "developer_team",
+        "accounts",
         "manager"
       ),
       defaultValue: "employee",
     },
-    // Verification and Required documents of employee
+    department: {
+      type: DataTypes.ENUM(
+        "Development Team",
+        "HR Team",
+        "SMM Team",
+        "Designer Team",
+        "Sales Team",
+        "Support Team",
+        "Accounts Team",
+        "Manager"
+      ),
+    },
     phone: {
       type: DataTypes.STRING(15),
       unique: true,
@@ -49,19 +60,6 @@ const Employee = sequelize.define(
     },
     designation: {
       type: DataTypes.STRING(50),
-    },
-    department: {
-      type: DataTypes.ENUM,
-      values: [
-        "Development Team",
-        "HR Team",
-        "SMM Team",
-        "Designer Team",
-        "Accounts Team",
-        "Sales Team",
-        "Support Team",
-        "Manager",
-      ],
     },
     dob: {
       type: DataTypes.DATE,
