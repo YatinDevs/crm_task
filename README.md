@@ -436,5 +436,349 @@ npm run dev or npm start
  tanstack query
  tankstack table
 -->
-#   c r m _ t a s k  
- 
+
+# React Vite + Node.js + PostgreSQL Setup
+
+## React Vite Frontend Setup
+
+> Official Vite Documentation: https://vite.dev/guide/
+
+### 1. Create Vite App
+
+```bash
+npm create vite@latest
+```
+
+- Select a folder
+- Choose "react"
+
+```bash
+npm install
+```
+
+- Installs necessary `node_modules`.
+
+### 2. Run the Project
+
+```bash
+npm run dev
+```
+
+- Project runs on [http://localhost:5173/](http://localhost:5173/)
+
+### 3. Access on Mobile (Same Network)
+
+Update `package.json`:
+
+```json
+"scripts": {
+  "dev": "vite --host",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview"
+}
+```
+
+### 4. Clean Boilerplate
+
+- Delete contents of:
+
+  - `App.jsx`
+  - `App.css`
+  - `index.css`
+
+- Recreate `App.jsx`:
+
+```jsx
+import React from "react";
+
+function App() {
+  return <div>App</div>;
+}
+
+export default App;
+```
+
+---
+
+## Tailwind CSS with Vite
+
+> Tailwind Setup: https://tailwindcss.com/docs/installation/using-vite
+
+### 1. Install Tailwind
+
+```bash
+npm install tailwindcss @tailwindcss/vite
+```
+
+### 2. Configure Vite
+
+```js
+// vite.config.ts or vite.config.js
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+});
+```
+
+### 3. Import Tailwind CSS
+
+Add to `index.css`:
+
+```css
+@import "tailwindcss";
+```
+
+### 4. Run Dev Server
+
+```bash
+npm run dev
+```
+
+---
+
+## React Router Setup
+
+```bash
+npm i react-router-dom
+```
+
+### App.jsx
+
+```jsx
+import React from "react";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from "react-router-dom";
+
+import Layout from "./Layout/Layout";
+import Home from "./pages/Home/Home";
+import About from "./pages/About/About";
+import Contact from "./pages/Contact/Contact";
+
+function App() {
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="about" element={<About />} />
+        <Route path="contact" element={<Contact />} />
+      </Route>
+    )
+  );
+
+  return <RouterProvider router={router} />;
+}
+
+export default App;
+```
+
+### Layout.jsx
+
+```jsx
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Navbar from "../components/Navbar/Navbar";
+import Footer from "../components/Footer/Footer";
+
+function Layout() {
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
+  );
+}
+
+export default Layout;
+```
+
+---
+
+## Zustand State Management
+
+_(Placeholder for Zustand setup)_
+
+---
+
+## Backend Node.js Setup
+
+### 1. Node.js Environment
+
+- Download & install Node.js: https://nodejs.org/en
+- Verify installation:
+
+```bash
+node -v
+npm -v
+```
+
+- Set Execution Policy (for Windows PowerShell):
+
+```bash
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+### 2. PostgreSQL & pgAdmin
+
+- Download: https://www.postgresql.org/download/
+- Install & set password for `postgres` user.
+
+---
+
+## GitHub Repository Setup
+
+```bash
+echo "# website-template-app" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/YatinDevs/website-template-app.git
+git push -u origin main
+```
+
+---
+
+## Project Folder Structure
+
+```
+App/
+├── config/
+│   └── db.js
+├── controller/
+│   ├── authController.js
+│   └── adminController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   └── adminMiddleware.js
+├── models/
+│   ├── User.js
+│   └── Admin.js
+├── routes/
+│   ├── authRoutes.js
+│   └── adminRoutes.js
+└── index.js
+```
+
+---
+
+## Setup Node Server with PostgreSQL
+
+### 1. Create Node Project
+
+```bash
+npm init -y
+npm install express cors dotenv body-parser morgan cookie-parser nodemon
+```
+
+### 2. Setup PostgreSQL ORM
+
+```bash
+npm i pg sequelize pg-hstore
+```
+
+### .env File
+
+```env
+# Postgres - Docker Configuration
+db_user=postgres
+db_pass=12345
+db_name=lite-server_db
+db_port=5433
+
+# Localhost Configuration
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=root
+DB_NAME=webtempapp-db
+DB_PORT=5433
+```
+
+### Database Config
+
+**config/db.config.js**
+
+```js
+module.exports = {
+  HOST: process.env.DB_HOST,
+  USER: process.env.DB_USER,
+  PASSWORD: process.env.DB_PASSWORD,
+  DB: process.env.DB_NAME,
+  PORT: process.env.DB_PORT,
+  dialect: "postgres",
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000,
+  },
+};
+```
+
+**utils/db.js**
+
+```js
+const { Sequelize } = require("sequelize");
+const dbConfig = require("../config/db.config");
+
+const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
+  host: dbConfig.HOST,
+  port: dbConfig.PORT,
+  dialect: dbConfig.dialect,
+  timezone: "+05:30",
+  pool: dbConfig.pool,
+});
+
+module.exports = sequelize;
+```
+
+---
+
+## Authentication Setup
+
+### Install Dependencies
+
+```bash
+npm install bcryptjs jsonwebtoken
+```
+
+### Example Response (Signup/Login)
+
+```json
+{
+  "message": "User created and logged in successfully",
+  "accessToken": "<JWT_TOKEN>",
+  "userDetails": {
+    "role": "user",
+    "id": 1,
+    "username": "yatin",
+    "email": "c.yatin727@gmail.com"
+  }
+}
+```
+
+---
+
+## Admin Credentials (Example)
+
+```json
+{
+  "username": "Yatin Chaudhari",
+  "email": "c.yatin727@gmail.com",
+  "password": "9594515799"
+}
+```
+
+---
+
+## Notes
+
+- TanStack Query & TanStack Table can be integrated optionally for advanced state/data management.
