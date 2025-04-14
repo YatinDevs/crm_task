@@ -9,12 +9,7 @@ const Task = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
-    date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    taskType: {
+    title: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -22,74 +17,41 @@ const Task = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    clientName: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     status: {
       type: DataTypes.ENUM(
-        "Not Started",
-        "In Progress",
-        "Completed",
-        "Blocked",
-        "On Hold"
+        "pending",
+        "in-progress",
+        "completed",
+        "review",
+        "approved",
+        "rejected"
       ),
-      defaultValue: "Not Started",
+      defaultValue: "pending",
     },
-    followUpRequired: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
+    priority: {
+      type: DataTypes.ENUM("low", "medium", "high", "critical"),
+      defaultValue: "medium",
     },
-    remarks: DataTypes.TEXT,
-
-    // Role-specific fields (nullable for other roles)
-    postTopic: DataTypes.STRING,
-    postType: DataTypes.STRING,
-    designStatus: DataTypes.STRING,
-    timeSpent: DataTypes.FLOAT,
-    fileName: DataTypes.STRING,
-    sharedWith: DataTypes.STRING,
-    language: DataTypes.STRING,
-    submittedTo: DataTypes.STRING,
-    moduleName: DataTypes.STRING,
-    platform: DataTypes.STRING,
-    timePosted: DataTypes.TIME,
-    scheduledDate: DataTypes.DATE,
-    postLink: DataTypes.STRING,
-    campaignName: DataTypes.STRING,
-    toolUsed: DataTypes.STRING,
-    totalCalls: DataTypes.INTEGER,
-    responses: DataTypes.INTEGER,
-
-    // Relationships
-    employeeId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: "Employees",
-        key: "id",
-      },
+    dueDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
-    projectId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: "Projects",
-        key: "id",
-      },
+    estimatedHours: {
+      type: DataTypes.FLOAT,
+    },
+    actualHours: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    department: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {
+    tableName: "Tasks",
     timestamps: true,
-    indexes: [
-      { fields: ["date"] },
-      { fields: ["employeeId"] },
-      { fields: ["clientName"] },
-      { fields: ["status"] },
-    ],
   }
 );
 
-Task.associate = (models) => {
-  Task.belongsTo(models.Employee, { foreignKey: "employeeId" });
-  Task.belongsTo(models.Project, { foreignKey: "projectId" });
-};
 module.exports = Task;

@@ -11,9 +11,29 @@ const sequelize = require("./utils/db");
 // Model Define - Table Define
 const Employee = require("./models/employeeModel");
 const Token = require("./models/tokenModel");
+const Task = require("./models/taskModel");
+const DailyUpdate = require("./models/dailyUpdate");
+const TaskComment = require("./models/taskComment");
+const TaskAttachment = require("./models/taskAttachment");
+const models = { Employee, Token, DailyUpdate, TaskComment, TaskAttachment };
 
-const models = { Employee, Token };
+// Task Associations
+Task.belongsTo(Employee, { foreignKey: "assignedTo", as: "assignee" });
+Task.belongsTo(Employee, { foreignKey: "assignedBy", as: "assigner" });
+Task.hasMany(DailyUpdate, { foreignKey: "taskId" });
+Task.hasMany(TaskComment, { foreignKey: "taskId" });
+Task.hasMany(TaskAttachment, { foreignKey: "taskId" });
 
+// DailyUpdate Associations
+DailyUpdate.belongsTo(Task, { foreignKey: "taskId" });
+DailyUpdate.belongsTo(Employee, { foreignKey: "employeeId" });
+
+// TaskComment Associations
+TaskComment.belongsTo(Task, { foreignKey: "taskId" });
+TaskComment.belongsTo(Employee, { foreignKey: "employeeId" });
+
+// TaskAttachment Associations
+TaskAttachment.belongsTo(Task, { foreignKey: "taskId" });
 Object.keys(models).forEach((modelName) => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
@@ -42,10 +62,15 @@ app.use(cors(corsOptions)); // Handle all routes CORS at once
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const { errorHandler } = require("./middlewares/errorMiddleware");
 
 // Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/emp", employeeRoutes);
+app.use("/api/v1/task", taskRoutes);
+
+app.use(errorHandler);
 
 // http://localhost:8088/test
 sequelize

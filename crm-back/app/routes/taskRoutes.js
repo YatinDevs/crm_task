@@ -1,26 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const TaskController = require("../controllers/taskController");
+const taskController = require("../controllers/taskController");
+const { authenticate } = require("../middlewares/authMiddleware");
 
-// Create new task
-router.post("/", TaskController.createTask);
-
-// Get tasks with filters
-router.get("/", TaskController.getTasks);
-
-// Get task by ID
-router.get("/:id", TaskController.getTaskById);
-
-// Update task
-router.put("/:id", TaskController.updateTask);
-
-// Delete task
-router.delete("/:id", TaskController.deleteTask);
-
-// Daily reports
-router.get("/reports/daily", TaskController.getDailyReport);
-router.get("/reports/employee/:employeeId", TaskController.getEmployeeReport);
-router.get("/reports/client/:clientName", TaskController.getClientReport);
-router.get("/reports/team/:team", TaskController.getTeamReport);
+// Task routes
+router.post("/", authenticate, taskController.createTask); //http://localhost:8088/api/v1/task
+router.post("/self", authenticate, taskController.createSelfTask); //http://localhost:8088/api/v1/task
+router.get("/my-tasks", authenticate, taskController.getEmployeeTasks);
+router.get("/department", authenticate, taskController.getDepartmentTasks);
+router.get("/:taskId", authenticate, taskController.getTaskDetails);
+router.post("/daily-update", authenticate, taskController.addDailyUpdate);
+router.put("/status", authenticate, taskController.updateTaskStatus);
+router.post("/comment", authenticate, taskController.addComment);
+router.get(
+  "/reports/department",
+  authenticate,
+  taskController.getDepartmentReports
+);
 
 module.exports = router;

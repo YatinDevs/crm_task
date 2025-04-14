@@ -3,7 +3,8 @@ const Employee = require("../models/employeeModel");
 const checkRole = (roles) => {
   return async (req, res, next) => {
     try {
-      const employeeId = req.employee.id;
+      console.log(req.user, `here2`);
+      const employeeId = req.user.id;
       const employee = await Employee.findByPk(employeeId);
       console.log(employee);
       if (!employee) {

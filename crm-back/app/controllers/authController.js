@@ -183,7 +183,7 @@ exports.getEmp = async (req, res) => {
 
     const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
     const employee = await Employee.findByPk(decoded.id, {
-      attributes: ["id", "username", "email", "role"],
+      attributes: ["id", "username", "email", "role", "department"],
     });
 
     if (!employee) return res.status(404).json({ error: "Employee not found" });
