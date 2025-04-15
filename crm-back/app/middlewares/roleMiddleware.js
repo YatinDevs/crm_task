@@ -3,10 +3,10 @@ const Employee = require("../models/employeeModel");
 const checkRole = (roles) => {
   return async (req, res, next) => {
     try {
-      console.log(req.user, `here2`);
+      // console.log(req.user, `here2`);
       const employeeId = req.user.id;
       const employee = await Employee.findByPk(employeeId);
-      console.log(employee);
+      // console.log(employee);
       if (!employee) {
         return res.status(404).json({ error: "employee not found" });
       }

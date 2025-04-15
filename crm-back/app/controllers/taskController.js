@@ -5,6 +5,7 @@ const TaskAttachment = require("../models/taskAttachment");
 const Employee = require("../models/employeeModel");
 
 const { Op } = require("sequelize");
+const sequelize = require("../utils/db");
 // Create a task assigned to the authenticated user
 exports.createSelfTask = async (req, res) => {
   try {
@@ -82,7 +83,18 @@ exports.getEmployeeTasks = async (req, res) => {
           as: "assigner",
           attributes: ["id", "username", "email"],
         },
-        { model: DailyUpdate, order: [["createdAt", "DESC"]] },
+        {
+          model: DailyUpdate,
+          as: "dailyUpdates",
+          include: [
+            {
+              model: Employee,
+              as: "employee",
+              attributes: ["id", "username"],
+            },
+          ],
+          order: [["createdAt", "DESC"]],
+        },
       ],
       order: [["dueDate", "ASC"]],
     });
@@ -122,7 +134,18 @@ exports.getDepartmentTasks = async (req, res) => {
           as: "assigner",
           attributes: ["id", "username", "email"],
         },
-        { model: DailyUpdate, order: [["createdAt", "DESC"]] },
+        {
+          model: DailyUpdate,
+          as: "dailyUpdates",
+          include: [
+            {
+              model: Employee,
+              as: "employee",
+              attributes: ["id", "username"],
+            },
+          ],
+          order: [["createdAt", "DESC"]],
+        },
       ],
       order: [["dueDate", "ASC"]],
     });
@@ -146,6 +169,7 @@ exports.addDailyUpdate = async (req, res) => {
     const { taskId, update, hoursWorked, status } = req.body;
 
     const task = await Task.findByPk(taskId);
+    console.log(task);
     if (!task) {
       return res.status(404).json({
         success: false,
@@ -153,7 +177,7 @@ exports.addDailyUpdate = async (req, res) => {
       });
     }
 
-    if (task.assignedTo !== req.employee.id) {
+    if (task.assignedTo !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: "You can only update your own tasks",
@@ -162,7 +186,7 @@ exports.addDailyUpdate = async (req, res) => {
 
     const dailyUpdate = await DailyUpdate.create({
       taskId,
-      employeeId: req.employee.id,
+      employeeId: req.user.id,
       update,
       hoursWorked,
       status: status || task.status,
@@ -207,8 +231,8 @@ exports.updateTaskStatus = async (req, res) => {
 
     // Check if the employee is assigned to the task or is a manager/admin
     if (
-      task.assignedTo !== req.employee.id &&
-      !["manager", "admin"].includes(req.employee.role)
+      task.assignedTo !== req.user.id &&
+      !["manager", "admin"].includes(req.user.role)
     ) {
       return res.status(403).json({
         success: false,
@@ -246,7 +270,7 @@ exports.addComment = async (req, res) => {
 
     const taskComment = await TaskComment.create({
       taskId,
-      employeeId: req.employee.id,
+      employeeId: req.user.id,
       comment,
     });
 
@@ -262,8 +286,6 @@ exports.addComment = async (req, res) => {
     });
   }
 };
-
-// Get task details with updates and comments
 exports.getTaskDetails = async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -282,13 +304,32 @@ exports.getTaskDetails = async (req, res) => {
         },
         {
           model: DailyUpdate,
-          include: [{ model: Employee, attributes: ["id", "username"] }],
+          as: "dailyUpdates",
+          include: [
+            {
+              model: Employee,
+              as: "employee",
+              attributes: ["id", "username"],
+            },
+          ],
+          order: [["createdAt", "DESC"]],
         },
         {
           model: TaskComment,
-          include: [{ model: Employee, attributes: ["id", "username"] }],
+          as: "taskComments",
+          include: [
+            {
+              model: Employee,
+              as: "employee",
+              attributes: ["id", "username"],
+            },
+          ],
+          order: [["createdAt", "DESC"]],
         },
-        { model: TaskAttachment },
+        {
+          model: TaskAttachment,
+          as: "taskAttachments",
+        },
       ],
     });
 
@@ -299,10 +340,10 @@ exports.getTaskDetails = async (req, res) => {
       });
     }
 
-    // Check if the employee is assigned to the task or is a manager/admin
+    // Authorization check
     if (
-      task.assignedTo !== req.employee.id &&
-      !["manager", "admin"].includes(req.employee.role)
+      task.assignedTo !== req.user.id &&
+      !["manager", "admin"].includes(req.user.role)
     ) {
       return res.status(403).json({
         success: false,
@@ -322,18 +363,30 @@ exports.getTaskDetails = async (req, res) => {
   }
 };
 
-// Get department task reports (for managers)
+// Get department task reports (for managers and admins)
 exports.getDepartmentReports = async (req, res) => {
   try {
-    if (!["manager", "admin"].includes(req.employee.role)) {
+    const { department } = req.body; // Accept department name from request body
+
+    // Access control: Only 'manager' and 'admin' roles are permitted
+    if (!["manager", "admin"].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         error: "Unauthorized access",
       });
     }
 
+    // Validate that the department is provided
+    if (!department) {
+      return res.status(400).json({
+        success: false,
+        error: "Department name is required",
+      });
+    }
+
+    // Fetch task status summary for the specified department
     const tasks = await Task.findAll({
-      where: { department: req.employee.department },
+      where: { department },
       attributes: [
         "status",
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
@@ -344,15 +397,28 @@ exports.getDepartmentReports = async (req, res) => {
         [sequelize.fn("SUM", sequelize.col("actualHours")), "totalActualHours"],
       ],
       group: ["status"],
+      raw: true,
     });
 
+    // Fetch employee performance metrics within the specified department
     const employees = await Employee.findAll({
-      where: { department: req.employee.department },
+      where: { role: department },
       attributes: ["id", "username"],
       include: [
         {
           model: Task,
           as: "assignedTasks",
+          attributes: [],
+        },
+      ],
+      raw: true,
+    });
+
+    // Aggregate employee performance data
+    const employeePerformance = await Promise.all(
+      employees.map(async (employee) => {
+        const taskMetrics = await Task.findAll({
+          where: { assignedTo: employee.id },
           attributes: [
             [sequelize.fn("COUNT", sequelize.col("id")), "taskCount"],
             [
@@ -361,19 +427,29 @@ exports.getDepartmentReports = async (req, res) => {
             ],
             [sequelize.fn("SUM", sequelize.col("actualHours")), "totalActual"],
           ],
-        },
-      ],
-      group: ["Employee.id"],
-    });
+          raw: true,
+        });
 
+        return {
+          id: employee.id,
+          username: employee.username,
+          taskCount: taskMetrics[0].taskCount || 0,
+          totalEstimated: taskMetrics[0].totalEstimated || 0,
+          totalActual: taskMetrics[0].totalActual || 0,
+        };
+      })
+    );
+
+    // Respond with the aggregated report
     res.status(200).json({
       success: true,
       report: {
         statusSummary: tasks,
-        employeePerformance: employees,
+        employeePerformance,
       },
     });
   } catch (error) {
+    console.error("Error fetching department reports:", error);
     res.status(500).json({
       success: false,
       error: error.message,

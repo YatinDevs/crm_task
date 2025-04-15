@@ -6,17 +6,20 @@ const {
   generateAccessToken,
   generateRefreshToken,
 } = require("../utils/tokenUtils");
-
-// only admin or hr can create employees
 exports.createEmployee = async (req, res) => {
   try {
-    console.log(req.body, `here`);
+    // Authorization check - only admin or HR can create employees
+    if (!["admin", "hr"].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized - Only admin or HR can create employees",
+      });
+    }
 
     const {
       username,
       email,
-      password,
-      role,
+      password, // Now required from request
       phone,
       alternate_phone,
       designation,
@@ -31,21 +34,41 @@ exports.createEmployee = async (req, res) => {
       blood_group,
       reference_contacts,
       attachments,
+      role,
     } = req.body;
-    console.log(username, email, password, role);
 
-    const exisitingEmployee = await Employee.findOne({ where: { email } });
-    if (exisitingEmployee) {
-      return res.status(400).json({ error: "Email already exists" });
+    // Validate required fields
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: "Password is required",
+      });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 8 characters",
+      });
+    }
+
+    // Check for existing employee
+    const exisitingEmployee = await Employee.findOne({ where: { email } });
+    if (exisitingEmployee) {
+      return res.status(400).json({
+        success: false,
+        error: "Email already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12); // Increased salt rounds
 
     const employee = await Employee.create({
       username,
       email,
       password: hashedPassword,
-      role: role,
+      role: role || "employee", // Default role
       phone,
       alternate_phone,
       designation,
@@ -60,14 +83,23 @@ exports.createEmployee = async (req, res) => {
       blood_group,
       reference_contacts,
       attachments,
+      status: "active",
+      password_changed_at: new Date(), // Track when password was set
     });
 
     res.status(201).json({
-      message: "Employee Onboarded successfully",
-      employeeDetails: employee,
+      success: true,
+      message: "Employee onboarded successfully",
+      employeeId: employee.id,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Employee creation error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
 exports.getAllEmployee = async (req, res) => {

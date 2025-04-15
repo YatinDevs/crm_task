@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8088/api/v1";
+// const API_BASE_URL = "http://192.168.1.19:8088/api/v1";
 
 // const API_BASE_URL = ":8088/";
 
@@ -32,6 +33,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Try refreshing the token
+        console.log("here we are");
         await axios.get(`${API_BASE_URL}/auth/refresh`, {
           withCredentials: true,
         });

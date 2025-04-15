@@ -18,6 +18,7 @@ import AddEmployee from "./pages/ManageEmp/AddEmployee";
 import EmployeeList from "./pages/ManageEmp/EmployeeList";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import Signup from "./pages/Auth/Signup";
+import routes from "./routes/index";
 
 function App() {
   // http://localhost:5173
@@ -25,12 +26,22 @@ function App() {
   // http://localhost:5173/about  - path about
   // http://localhost:5173/contact  - path contact
 
-  const { checkAuth, employee, isAuthenticated } = useAuthStore();
+  const { checkAuth, employee, isAuthenticated, loading } = useAuthStore();
   console.log(employee);
   console.log(isAuthenticated);
   useEffect(() => {
     checkAuth();
   }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // if (!isAuthenticated) {
+  //   return <div>Please log in to continue.</div>;
+  // }
+  const role = employee?.role || "default";
+  const roleRoutes = routes[role] || [];
   const router = createBrowserRouter(
     createRoutesFromElements(
       <>
@@ -76,6 +87,17 @@ function App() {
             }
           />
           <Route path="*" element={<PageNotFound />} />
+          {roleRoutes.map(({ path, component: Component }) => (
+            <Route
+              key={path}
+              path={path}
+              element={
+                <ProtectedRoute roles={[employee?.role]}>
+                  <Component />
+                </ProtectedRoute>
+              }
+            />
+          ))}
         </Route>
       </>
     )

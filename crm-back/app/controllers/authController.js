@@ -141,10 +141,13 @@ exports.logout = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
+    console.log(refreshToken, `refresh`);
     if (!refreshToken)
       return res.status(401).json({ error: "No refresh token provided" });
 
     const tokenData = await Token.findOne({ where: { token: refreshToken } });
+
+    console.log(tokenData, `sadsa`);
     if (!tokenData || tokenData.expiresAt < new Date())
       return res
         .status(401)
@@ -175,13 +178,14 @@ exports.refreshToken = async (req, res) => {
 
 exports.getEmp = async (req, res) => {
   try {
-    console.log(req.body);
+    console.log(req.body, `sdas`);
     const { accessToken } = req.cookies;
     // console.log(em);
     if (!accessToken)
       return res.status(401).json({ error: "No token provided" });
 
     const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    console.log(decoded, `dsad`);
     const employee = await Employee.findByPk(decoded.id, {
       attributes: ["id", "username", "email", "role", "department"],
     });

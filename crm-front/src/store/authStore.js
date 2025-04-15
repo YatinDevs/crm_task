@@ -5,7 +5,7 @@ import { message } from "antd";
 const useAuthStore = create((set) => ({
   employee: null,
   isAuthenticated: false,
-
+  loading: true,
   login: async (formData) => {
     try {
       const response = await axiosInstance.post("/auth/login", formData);
@@ -41,11 +41,13 @@ const useAuthStore = create((set) => ({
       set({
         employee: res.data.employee,
         isAuthenticated: true,
+        loading: false,
       });
     } catch (error) {
       set({
         employee: null,
         isAuthenticated: false,
+        loading: false,
       });
       message.warning("Session expired. Please login again.");
     }

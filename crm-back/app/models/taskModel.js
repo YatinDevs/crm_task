@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../utils/db");
+const Employee = require("./employeeModel");
 
 const Task = sequelize.define(
   "Task",
